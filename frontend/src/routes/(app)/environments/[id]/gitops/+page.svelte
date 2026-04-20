@@ -44,14 +44,18 @@
 	};
 	const syncCounts = $derived(syncs?.counts ?? syncCountsFallback);
 
-	let targetTypeFromQuery = $state<string | undefined>(undefined);
+	let targetTypeFromQuery = $derived(
+		page.url.searchParams.get('action') === 'create' ? (page.url.searchParams.get('targetType') ?? undefined) : undefined
+	);
+
+	let dialogTargetType = $state<string | undefined>(undefined);
 
 	$effect(() => {
 		if (page.url.searchParams.get('action') === 'create') {
-			targetTypeFromQuery = page.url.searchParams.get('targetType') || undefined;
+			const typeQuery = targetTypeFromQuery;
 			// Use a small timeout to ensure the page is fully mounted and ready
 			setTimeout(() => {
-				openCreateSyncDialog();
+				openCreateSyncDialog(typeQuery);
 				// Remove the query param so it doesn't reopen on refresh
 				const newUrl = new URL(page.url);
 				newUrl.searchParams.delete('action');
@@ -74,8 +78,9 @@
 		});
 	}
 
-	function openCreateSyncDialog() {
+	function openCreateSyncDialog(targetType?: string) {
 		syncToEdit = null;
+		dialogTargetType = targetType;
 		isSyncDialogOpen = true;
 	}
 
@@ -213,7 +218,7 @@
 		<GitOpsSyncFormSheet
 			bind:open={isSyncDialogOpen}
 			bind:syncToEdit
-			targetType={targetTypeFromQuery}
+			targetType={dialogTargetType}
 			onSubmit={handleSyncDialogSubmit}
 			isLoading={isLoading.create || isLoading.edit}
 		/>
