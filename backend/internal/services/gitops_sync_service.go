@@ -500,7 +500,7 @@ func (s *GitOpsSyncService) PerformSync(ctx context.Context, environmentID, id s
 	}
 
 	if sync.TargetType == "swarm_stack" {
-		return s.performSwarmStackSync(syncCtx, sync, id, actor, result, source)
+		return s.performSwarmStackSyncInternal(syncCtx, sync, id, actor, result, source)
 	}
 
 	if sync.SyncDirectory {
@@ -595,10 +595,6 @@ func (s *GitOpsSyncService) performDirectorySync(ctx context.Context, sync *mode
 func (s *GitOpsSyncService) performSingleFileSync(ctx context.Context, sync *models.GitOpsSync, id string, actor models.User, result *gitops.SyncResult, source *preparedSyncSource) (*gitops.SyncResult, error) {
 	slog.InfoContext(ctx, "Using single file sync mode", "syncId", id, "composePath", sync.ComposePath, "targetType", sync.TargetType)
 
-	if sync.TargetType == "swarm_stack" {
-		return s.performSwarmStackSync(ctx, sync, id, actor, result, source)
-	}
-
 	project, err := s.getOrCreateProjectInternal(ctx, sync, id, source.composeContent, source.envContent, result, actor)
 	if err != nil {
 		return result, err
@@ -614,8 +610,8 @@ func (s *GitOpsSyncService) performSingleFileSync(ctx context.Context, sync *mod
 	return result, nil
 }
 
-// performSwarmStackSync executes a single file sync targeted at a Swarm Stack
-func (s *GitOpsSyncService) performSwarmStackSync(ctx context.Context, sync *models.GitOpsSync, id string, actor models.User, result *gitops.SyncResult, source *preparedSyncSource) (*gitops.SyncResult, error) {
+// performSwarmStackSyncInternal executes a single file sync targeted at a Swarm Stack
+func (s *GitOpsSyncService) performSwarmStackSyncInternal(ctx context.Context, sync *models.GitOpsSync, id string, actor models.User, result *gitops.SyncResult, source *preparedSyncSource) (*gitops.SyncResult, error) {
 	slog.InfoContext(ctx, "Deploying Swarm Stack from GitOps sync", "syncId", id, "stackName", sync.ProjectName)
 
 	if s.swarmService == nil {
