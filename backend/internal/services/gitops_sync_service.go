@@ -507,7 +507,7 @@ func (s *GitOpsSyncService) PerformSync(ctx context.Context, environmentID, id s
 		return s.performDirectorySync(syncCtx, sync, id, actor, result, source)
 	}
 
-	return s.performSingleFileSync(syncCtx, sync, id, actor, result, source)
+	return s.performSingleFileSyncInternal(syncCtx, sync, id, actor, result, source)
 }
 
 // prepareSyncSource clones the source repository, validates that the configured
@@ -591,9 +591,9 @@ func (s *GitOpsSyncService) performDirectorySync(ctx context.Context, sync *mode
 	return result, nil
 }
 
-// performSingleFileSync preserves the legacy compose-only Git sync behavior.
-func (s *GitOpsSyncService) performSingleFileSync(ctx context.Context, sync *models.GitOpsSync, id string, actor models.User, result *gitops.SyncResult, source *preparedSyncSource) (*gitops.SyncResult, error) {
-	slog.InfoContext(ctx, "Using single file sync mode", "syncId", id, "composePath", sync.ComposePath, "targetType", sync.TargetType)
+// performSingleFileSyncInternal preserves the legacy compose-only Git sync behavior.
+func (s *GitOpsSyncService) performSingleFileSyncInternal(ctx context.Context, sync *models.GitOpsSync, id string, actor models.User, result *gitops.SyncResult, source *preparedSyncSource) (*gitops.SyncResult, error) {
+	slog.InfoContext(ctx, "Using single file sync mode", "syncId", id, "composePath", sync.ComposePath)
 
 	project, err := s.getOrCreateProjectInternal(ctx, sync, id, source.composeContent, source.envContent, result, actor)
 	if err != nil {

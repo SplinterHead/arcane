@@ -86,6 +86,7 @@
 
 	function openEditSyncDialog(sync: GitOpsSync) {
 		syncToEdit = sync;
+		dialogTargetType = undefined;
 		isSyncDialogOpen = true;
 	}
 
