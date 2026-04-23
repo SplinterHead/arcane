@@ -2394,7 +2394,7 @@ func sanitizeServiceSpecInternal(spec *swarm.ServiceSpec) {
 	}
 
 	for _, ref := range spec.TaskTemplate.ContainerSpec.Secrets {
-		if ref.File != nil {
+		if ref != nil && ref.File != nil {
 			if strings.TrimSpace(ref.File.UID) == "" {
 				ref.File.UID = "0"
 			}
@@ -2405,7 +2405,7 @@ func sanitizeServiceSpecInternal(spec *swarm.ServiceSpec) {
 	}
 
 	for _, ref := range spec.TaskTemplate.ContainerSpec.Configs {
-		if ref.File != nil {
+		if ref != nil && ref.File != nil {
 			if strings.TrimSpace(ref.File.UID) == "" {
 				ref.File.UID = "0"
 			}
