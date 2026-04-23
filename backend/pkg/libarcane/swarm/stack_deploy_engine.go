@@ -925,8 +925,8 @@ func convertServiceSecretRefs(secrets []composegotypes.ServiceSecretConfig, secr
 		}
 		ref.File = &swarm.SecretReferenceFileTarget{
 			Name: target,
-			UID:  secret.UID,
-			GID:  secret.GID,
+			UID:  stringOrDefaultInternal(secret.UID, "0"),
+			GID:  stringOrDefaultInternal(secret.GID, "0"),
 			Mode: fileModeOrDefault(secret.Mode),
 		}
 		result = append(result, ref)
@@ -954,8 +954,8 @@ func convertServiceConfigRefs(configs []composegotypes.ServiceConfigObjConfig, c
 		}
 		ref.File = &swarm.ConfigReferenceFileTarget{
 			Name: target,
-			UID:  cfg.UID,
-			GID:  cfg.GID,
+			UID:  stringOrDefaultInternal(cfg.UID, "0"),
+			GID:  stringOrDefaultInternal(cfg.GID, "0"),
 			Mode: fileModeOrDefault(cfg.Mode),
 		}
 		result = append(result, ref)
@@ -1153,6 +1153,14 @@ func valueOrZero(value *uint64) uint64 {
 		return 0
 	}
 	return *value
+}
+
+func stringOrDefaultInternal(value, defaultValue string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }
 
 func mergeLabels(primary map[string]string, secondary map[string]string) map[string]string {
