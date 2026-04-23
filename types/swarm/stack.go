@@ -76,6 +76,11 @@ type StackRenderConfigRequest struct {
 	//
 	// Required: false
 	EnvContent string `json:"envContent,omitempty"`
+
+	// WorkingDir defines the working directory context for evaluating compose files.
+	//
+	// Required: false
+	WorkingDir string `json:"workingDir,omitempty"`
 }
 
 type StackRenderConfigResponse struct {

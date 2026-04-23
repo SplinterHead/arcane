@@ -1373,7 +1373,7 @@ func (h *SwarmHandler) RenderStackConfig(ctx context.Context, input *RenderSwarm
 		return nil, huma.Error500InternalServerError("service not available")
 	}
 
-	resp, err := h.swarmService.RenderStackConfig(ctx, input.Body)
+	resp, err := h.swarmService.RenderStackConfig(ctx, input.EnvironmentID, input.Body)
 	if err != nil {
 		return nil, mapSwarmServiceError(err, "Failed to render swarm stack config")
 	}

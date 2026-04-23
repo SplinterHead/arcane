@@ -830,20 +830,26 @@ func (s *SwarmService) DeployStack(ctx context.Context, environmentID string, re
 		return nil, fmt.Errorf("failed to connect to Docker: %w", err)
 	}
 
+	// Resolve working directory from saved source if not provided
+	workingDir := req.WorkingDir
+	if workingDir == "" {
+		_, sourceDir, err := s.resolveSwarmStackSourceDirInternal(ctx, environmentID, stackName)
+		if err == nil {
+			workingDir = sourceDir
+		}
+	}
+
 	if err := libswarm.DeployStack(ctx, dockerClient, libswarm.StackDeployOptions{
 		Name:             stackName,
 		ComposeContent:   req.ComposeContent,
 		EnvContent:       req.EnvContent,
-		WithRegistryAuth: req.WithRegistryAuth,
-		RegistryAuthForImage: func(ctx context.Context, imageRef string) (string, error) {
-			if s.registryService == nil {
-				return "", nil
-			}
-			return s.registryService.GetRegistryAuthForImage(ctx, imageRef)
+		WorkingDir:       workingDir,
+		WithRegistryAuth: true,
+		RegistryAuthForImage: func(ctx context.Context, image string) (string, error) {
+			return s.registryService.GetRegistryAuthForImage(ctx, image)
 		},
-		Prune:        req.Prune,
 		ResolveImage: req.ResolveImage,
-		WorkingDir:   req.WorkingDir,
+		Prune:        req.Prune,
 	}); err != nil {
 		return nil, err
 	}
@@ -1328,8 +1334,21 @@ func (s *SwarmService) UpdateStackSource(ctx context.Context, environmentID, sta
 		return nil, errors.New("stack compose source is required")
 	}
 
+	// Update the saved source first
 	if err := s.upsertStackSourceInternal(ctx, environmentID, stackName, req.ComposeContent, req.EnvContent); err != nil {
 		return nil, err
+	}
+
+	// Trigger a deployment to apply the changes to the Swarm cluster
+	_, err := s.DeployStack(ctx, environmentID, swarmtypes.StackDeployRequest{
+		Name:           stackName,
+		ComposeContent: req.ComposeContent,
+		EnvContent:     req.EnvContent,
+		ResolveImage:   "changed", // Default behavior
+		Prune:          true,      // Prune is generally desired when updating via source
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to deploy stack after updating source: %w", err)
 	}
 
 	return &swarmtypes.StackSource{
@@ -1591,15 +1610,30 @@ func (s *SwarmService) ListStackTasksPaginated(ctx context.Context, stackName st
 	return s.listTasksPaginatedWithFiltersInternal(ctx, filters, params)
 }
 
-func (s *SwarmService) RenderStackConfig(ctx context.Context, req swarmtypes.StackRenderConfigRequest) (*swarmtypes.StackRenderConfigResponse, error) {
+func (s *SwarmService) RenderStackConfig(ctx context.Context, environmentID string, req swarmtypes.StackRenderConfigRequest) (*swarmtypes.StackRenderConfigResponse, error) {
 	if err := s.ensureSwarmManagerInternal(ctx); err != nil {
 		return nil, err
 	}
 
+	stackName := strings.TrimSpace(req.Name)
+	if stackName == "" {
+		return nil, errors.New("stack name is required")
+	}
+
+	// Resolve working directory from saved source if not provided
+	workingDir := req.WorkingDir
+	if workingDir == "" {
+		_, sourceDir, err := s.resolveSwarmStackSourceDirInternal(ctx, environmentID, stackName)
+		if err == nil {
+			workingDir = sourceDir
+		}
+	}
+
 	result, err := libswarm.RenderStackConfig(ctx, libswarm.StackRenderOptions{
-		Name:           req.Name,
+		Name:           stackName,
 		ComposeContent: req.ComposeContent,
 		EnvContent:     req.EnvContent,
+		WorkingDir:     workingDir,
 	})
 	if err != nil {
 		return nil, err
